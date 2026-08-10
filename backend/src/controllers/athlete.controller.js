@@ -25,6 +25,27 @@ async function getAthlete(req, res) {
   return res.json(athlete);
 }
 
+async function getMe(req, res) {
+  if (req.user.role !== "ATHLETE") {
+    return res.status(403).json({ error: "Hanya untuk role ATHLETE" });
+  }
+
+  const athlete = await prisma.athleteProfile.findUnique({
+    where: { userId: req.user.userId },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      timeTrials: { orderBy: { date: "asc" } },
+      eventEntries: { include: { event: true } },
+    },
+  });
+
+  if (!athlete) {
+    return res.status(404).json({ error: "Profil atlet belum ada" });
+  }
+
+  return res.json(athlete);
+}
+
 async function updateAthlete(req, res) {
   const { id } = req.params;
   const { athleteNumber, kta, birthDate, category, club, photoUrl } = req.body;
@@ -37,4 +58,4 @@ async function updateAthlete(req, res) {
   return res.json(athlete);
 }
 
-module.exports = { listAthletes, getAthlete, updateAthlete };
+module.exports = { listAthletes, getAthlete, getMe, updateAthlete };

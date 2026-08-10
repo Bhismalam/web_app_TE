@@ -16,7 +16,13 @@ async function register(req, res) {
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { name, email, password: passwordHash, role },
+    data: {
+      name,
+      email,
+      password: passwordHash,
+      role,
+      athleteProfile: role === "ATHLETE" ? { create: {} } : undefined,
+    },
   });
 
   return res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });

@@ -14,5 +14,7 @@ app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/athletes", require("./routes/athlete.routes"));
 app.use("/api/events", require("./routes/event.routes"));
 app.use("/api/time-trials", require("./routes/timeTrial.routes"));
+app.use("/api/training", require("./routes/training.routes"));
+app.use("/api/coach", require("./routes/coach.routes"));
 
 module.exports = app;
