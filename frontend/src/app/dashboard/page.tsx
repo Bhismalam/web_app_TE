@@ -38,11 +38,14 @@ export default function DashboardPage() {
     <AppShell user={user}>
       <div className="px-6 py-8">
         <div className="mx-auto max-w-5xl">
-          <div className="bg-dot-grid relative overflow-hidden rounded-3xl bg-brand-gradient px-6 py-7 text-white shadow-lift sm:px-8">
-            <p className="text-sm text-white/75">
-              {greeting()}, {ROLE_LABEL[user.role]}
-            </p>
-            <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Halo, {user.name} 👋</h1>
+          <div className="relative overflow-hidden rounded-3xl bg-brand-gradient px-6 py-7 text-white shadow-lift sm:px-8">
+            <div className="bg-dot-grid absolute inset-0 opacity-40" />
+            <div className="relative">
+              <p className="text-sm text-white/75">
+                {greeting()}, {ROLE_LABEL[user.role]}
+              </p>
+              <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Halo, {user.name} 👋</h1>
+            </div>
           </div>
 
           {user.role === "ATHLETE" && <AthleteDashboard user={user} token={token} />}
