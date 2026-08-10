@@ -34,7 +34,16 @@ async function getEvent(req, res) {
     return res.status(404).json({ error: "Event tidak ditemukan" });
   }
 
-  return res.json(event);
+  // Status pembayaran itu info finansial pribadi: hanya boleh dilihat oleh
+  // ADMIN/COACH atau si atlet pemilik pendaftaran itu sendiri.
+  const isStaff = req.user.role === "ADMIN" || req.user.role === "COACH";
+  const sanitizedEntries = event.entries.map((entry) => {
+    if (isStaff || entry.athlete.user.id === req.user.userId) return entry;
+    const { paymentStatus, ...rest } = entry;
+    return rest;
+  });
+
+  return res.json({ ...event, entries: sanitizedEntries });
 }
 
 const SPORTS = ["SWIMMING", "FINSWIMMING"];

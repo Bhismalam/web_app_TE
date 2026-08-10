@@ -21,6 +21,10 @@ async function register(req, res) {
     return res.status(400).json({ error: "name, email, password wajib diisi" });
   }
 
+  if (password.length < 6) {
+    return res.status(400).json({ error: "Password minimal 6 karakter" });
+  }
+
   if (sport && !SPORTS.includes(sport)) {
     return res.status(400).json({ error: `sport harus salah satu dari: ${SPORTS.join(", ")}` });
   }
@@ -69,6 +73,10 @@ async function registerStaff(req, res) {
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: "name, email, password, role wajib diisi" });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: "Password minimal 6 karakter" });
   }
 
   if (!STAFF_ROLES.includes(role)) {

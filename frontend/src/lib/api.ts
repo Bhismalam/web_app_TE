@@ -220,7 +220,9 @@ export type EventSummary = {
 export type EventParticipant = {
   id: string;
   result: string | null;
-  paymentStatus: PaymentStatus;
+  // Tidak selalu ada: backend hanya mengirim status bayar ke ADMIN/COACH
+  // atau ke atlet pemilik pendaftaran itu sendiri.
+  paymentStatus?: PaymentStatus;
   registeredAt: string;
   athlete: {
     id: string;

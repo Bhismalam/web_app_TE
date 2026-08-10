@@ -357,7 +357,9 @@ export default function EventDetailPage() {
                           )}
                           {isStaff && (
                             <button
-                              onClick={() => handleTogglePayment(entry.id, entry.paymentStatus)}
+                              onClick={() =>
+                                handleTogglePayment(entry.id, entry.paymentStatus ?? "UNPAID")
+                              }
                               disabled={payingId === entry.id}
                               className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
                                 entry.paymentStatus === "PAID"

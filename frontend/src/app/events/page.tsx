@@ -22,9 +22,50 @@ const SPORT_BADGE_CLASS: Record<Sport, string> = {
   FINSWIMMING: "bg-secondary/15 text-secondary",
 };
 
-type CategoryRow = { name: string; type: EventCategoryType; fee: string };
+const CUSTOM_OPTION = "__CUSTOM__";
 
-const EMPTY_ROW: CategoryRow = { name: "", type: "INDIVIDU", fee: "" };
+const NOMOR_OPTIONS: Record<Sport, string[]> = {
+  SWIMMING: [
+    "50M Gaya Bebas",
+    "100M Gaya Bebas",
+    "200M Gaya Bebas",
+    "400M Gaya Bebas",
+    "50M Gaya Punggung",
+    "100M Gaya Punggung",
+    "200M Gaya Punggung",
+    "50M Gaya Dada",
+    "100M Gaya Dada",
+    "200M Gaya Dada",
+    "50M Gaya Kupu-kupu",
+    "100M Gaya Kupu-kupu",
+    "200M Gaya Kupu-kupu",
+    "200M Gaya Ganti Perorangan",
+    "400M Gaya Ganti Perorangan",
+    "4x50M Estafet Bebas",
+    "4x100M Estafet Bebas",
+    "4x100M Estafet Ganti",
+  ],
+  FINSWIMMING: [
+    "50M Surface",
+    "100M Surface",
+    "200M Surface",
+    "400M Surface",
+    "4x50M Estafet Surface",
+    "4x100M Estafet Surface",
+    "50M Bifins",
+    "100M Bifins",
+    "200M Bifins",
+    "400M Bifins",
+    "50M Apnea",
+    "100M Apnea",
+    "100M Immersion",
+    "400M Immersion",
+  ],
+};
+
+type CategoryRow = { name: string; type: EventCategoryType; fee: string; custom: boolean };
+
+const EMPTY_ROW: CategoryRow = { name: "", type: "INDIVIDU", fee: "", custom: false };
 
 export default function EventsPage() {
   const router = useRouter();
@@ -58,9 +99,19 @@ export default function EventsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  function updateRow(index: number, field: keyof CategoryRow, value: string) {
+  function updateRow(index: number, field: "name" | "type" | "fee", value: string) {
     setCategoryRows((prev) =>
       prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
+  }
+
+  function updateRowNomor(index: number, value: string) {
+    setCategoryRows((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        if (value === CUSTOM_OPTION) return { ...row, custom: true, name: "" };
+        return { ...row, custom: false, name: value };
+      })
     );
   }
 
@@ -145,22 +196,17 @@ export default function EventsPage() {
                   <label className="mb-1.5 block text-sm font-medium text-foreground">
                     Cabang
                   </label>
-                  <div className="inline-flex rounded-lg bg-background p-0.5">
+                  <select
+                    value={sport}
+                    onChange={(e) => setSport(e.target.value as Sport)}
+                    className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  >
                     {SPORT_OPTIONS.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSport(s)}
-                        className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                          sport === s
-                            ? "bg-white text-primary shadow-soft"
-                            : "text-foreground/55 hover:text-foreground"
-                        }`}
-                      >
+                      <option key={s} value={s}>
                         {SPORT_LABEL[s]}
-                      </button>
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -197,12 +243,21 @@ export default function EventsPage() {
                     {categoryRows.map((row, index) => (
                       <div key={index} className="rounded-xl border border-black/10 p-3">
                         <div className="flex items-center gap-2">
-                          <input
-                            value={row.name}
-                            onChange={(e) => updateRow(index, "name", e.target.value)}
-                            placeholder="mis. 50M Surface"
+                          <select
+                            value={row.custom ? CUSTOM_OPTION : row.name}
+                            onChange={(e) => updateRowNomor(index, e.target.value)}
                             className="flex-1 rounded-xl border border-black/10 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-                          />
+                          >
+                            <option value="" disabled>
+                              Pilih nomor
+                            </option>
+                            {NOMOR_OPTIONS[sport].map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                            <option value={CUSTOM_OPTION}>Lainnya (isi manual)</option>
+                          </select>
                           <button
                             type="button"
                             onClick={() => removeRow(index)}
@@ -213,6 +268,14 @@ export default function EventsPage() {
                             <Trash2 size={16} />
                           </button>
                         </div>
+                        {row.custom && (
+                          <input
+                            value={row.name}
+                            onChange={(e) => updateRow(index, "name", e.target.value)}
+                            placeholder="Tulis nama nomor sendiri"
+                            className="mt-2 w-full rounded-xl border border-black/10 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                          />
+                        )}
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex rounded-lg bg-background p-0.5">
                             {CATEGORY_TYPES.map((t) => (
