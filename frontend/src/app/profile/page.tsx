@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Medal, Trophy } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { getMyAthleteProfile } from "@/lib/api";
-import type { AthleteMe } from "@/lib/api";
+import type { AthleteMe, AuthUser } from "@/lib/api";
 import { formatDate } from "@/lib/time";
+import AppShell from "@/components/AppShell";
+import Card, { CardLabel } from "@/components/ui/Card";
 
 const CATEGORY_LABEL: Record<string, string> = {
   JUNIOR: "Junior",
@@ -24,6 +26,7 @@ function initials(name: string) {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<AthleteMe | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export default function ProfilePage() {
       router.replace("/dashboard");
       return;
     }
+    setUser(session.user);
 
     getMyAthleteProfile(session.token)
       .then(setProfile)
@@ -45,12 +49,22 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  if (!user) return null;
+
   if (loading) {
-    return <p className="mt-8 px-6 text-sm text-foreground/60">Memuat profil...</p>;
+    return (
+      <AppShell user={user}>
+        <p className="px-6 py-8 text-sm text-foreground/60">Memuat profil...</p>
+      </AppShell>
+    );
   }
 
   if (error || !profile) {
-    return <p className="mt-8 px-6 text-sm text-red-600">{error || "Profil tidak ditemukan"}</p>;
+    return (
+      <AppShell user={user}>
+        <p className="px-6 py-8 text-sm text-red-600">{error || "Profil tidak ditemukan"}</p>
+      </AppShell>
+    );
   }
 
   const gold = profile.eventEntries.filter((e) => e.result === "GOLD").length;
@@ -59,84 +73,92 @@ export default function ProfilePage() {
   const totalCompetition = profile.eventEntries.length;
 
   return (
-    <div className="min-h-screen bg-background px-6 py-8">
-      <div className="mx-auto max-w-3xl">
-        <Link href="/dashboard" className="text-sm text-primary hover:underline">
-          ← Kembali ke Dashboard
-        </Link>
+    <AppShell user={user}>
+      <div className="px-6 py-8">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="text-2xl font-bold text-foreground">Profile</h1>
 
-        <div className="mt-4 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            {profile.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.photoUrl}
-                alt={profile.user.name}
-                className="h-20 w-20 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-bold text-white">
-                {initials(profile.user.name)}
+          <Card className="mt-4">
+            <div className="flex items-center gap-4">
+              {profile.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.photoUrl}
+                  alt={profile.user.name}
+                  className="h-20 w-20 rounded-full object-cover ring-4 ring-primary/10"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-gradient text-2xl font-bold text-white ring-4 ring-primary/10">
+                  {initials(profile.user.name)}
+                </div>
+              )}
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">{profile.user.name}</h2>
+                <p className="text-sm text-foreground/55">{profile.user.email}</p>
               </div>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">{profile.user.name}</h1>
-              <p className="text-sm text-foreground/60">{profile.user.email}</p>
             </div>
-          </div>
 
-          <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div>
-              <dt className="text-xs text-foreground/50">Nomor Atlet</dt>
-              <dd className="text-sm font-medium text-foreground">
-                {profile.athleteNumber || "-"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-foreground/50">KTA</dt>
-              <dd className="text-sm font-medium text-foreground">{profile.kta || "-"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-foreground/50">Tanggal Lahir</dt>
-              <dd className="text-sm font-medium text-foreground">
-                {profile.birthDate ? formatDate(profile.birthDate) : "-"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-foreground/50">Kategori</dt>
-              <dd className="text-sm font-medium text-foreground">
-                {profile.category ? CATEGORY_LABEL[profile.category] : "-"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-foreground/50">Club</dt>
-              <dd className="text-sm font-medium text-foreground">{profile.club || "-"}</dd>
-            </div>
-          </dl>
-        </div>
+            <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-black/5 pt-5 sm:grid-cols-3">
+              <div>
+                <dt className="text-xs text-foreground/45">Nomor Atlet</dt>
+                <dd className="text-sm font-medium text-foreground">
+                  {profile.athleteNumber || "-"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-foreground/45">KTA</dt>
+                <dd className="text-sm font-medium text-foreground">{profile.kta || "-"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-foreground/45">Tanggal Lahir</dt>
+                <dd className="text-sm font-medium text-foreground">
+                  {profile.birthDate ? formatDate(profile.birthDate) : "-"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-foreground/45">Kategori</dt>
+                <dd className="text-sm font-medium text-foreground">
+                  {profile.category ? CATEGORY_LABEL[profile.category] : "-"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-foreground/45">Club</dt>
+                <dd className="text-sm font-medium text-foreground">{profile.club || "-"}</dd>
+              </div>
+            </dl>
+          </Card>
 
-        <div className="mt-6 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-foreground/60">Statistik Atlet</h2>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-xl bg-background p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">🏆 {totalCompetition}</p>
-              <p className="mt-1 text-xs text-foreground/60">Total Competition</p>
+          <Card className="mt-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Trophy size={16} />
+              </div>
+              <CardLabel>Statistik Atlet</CardLabel>
             </div>
-            <div className="rounded-xl bg-background p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">🥇 {gold}</p>
-              <p className="mt-1 text-xs text-foreground/60">Gold</p>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl bg-background p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{totalCompetition}</p>
+                <p className="mt-1 text-xs text-foreground/55">Total Competition</p>
+              </div>
+              <div className="rounded-xl bg-gold/10 p-4 text-center">
+                <Medal size={18} className="mx-auto text-gold" />
+                <p className="mt-1 text-2xl font-bold text-foreground">{gold}</p>
+                <p className="mt-0.5 text-xs text-foreground/55">Gold</p>
+              </div>
+              <div className="rounded-xl bg-silver/10 p-4 text-center">
+                <Medal size={18} className="mx-auto text-slate-400" />
+                <p className="mt-1 text-2xl font-bold text-foreground">{silver}</p>
+                <p className="mt-0.5 text-xs text-foreground/55">Silver</p>
+              </div>
+              <div className="rounded-xl bg-bronze/10 p-4 text-center">
+                <Medal size={18} className="mx-auto text-bronze" />
+                <p className="mt-1 text-2xl font-bold text-foreground">{bronze}</p>
+                <p className="mt-0.5 text-xs text-foreground/55">Bronze</p>
+              </div>
             </div>
-            <div className="rounded-xl bg-background p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">🥈 {silver}</p>
-              <p className="mt-1 text-xs text-foreground/60">Silver</p>
-            </div>
-            <div className="rounded-xl bg-background p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">🥉 {bronze}</p>
-              <p className="mt-1 text-xs text-foreground/60">Bronze</p>
-            </div>
-          </div>
+          </Card>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

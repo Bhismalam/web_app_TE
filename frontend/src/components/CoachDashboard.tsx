@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Users, Activity, TrendingUp, AlertCircle } from "lucide-react";
 import { getCoachDashboard } from "@/lib/api";
 import type { CoachDashboardStats } from "@/lib/api";
+import Card, { CardLabel } from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function CoachDashboard({ token }: { token: string }) {
   const [stats, setStats] = useState<CoachDashboardStats | null>(null);
@@ -27,43 +31,53 @@ export default function CoachDashboard({ token }: { token: string }) {
   if (!stats) return null;
 
   return (
-    <div className="mt-8 flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-4">
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold text-foreground/50">Total Athlete</p>
-          <p className="mt-2 text-3xl font-bold text-foreground">{stats.totalAthletes}</p>
-        </div>
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold text-foreground/50">Active Training</p>
-          <p className="mt-2 text-3xl font-bold text-foreground">{stats.activeTraining}</p>
-        </div>
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold text-foreground/50">Average Improvement</p>
-          <p className="mt-2 text-3xl font-bold text-foreground">
-            {stats.averageImprovement !== null
+    <div className="mt-6 flex flex-col gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={Users} label="Total Athlete" value={stats.totalAthletes} tone="primary" />
+        <StatCard icon={Activity} label="Active Training" value={stats.activeTraining} tone="green" />
+        <StatCard
+          icon={TrendingUp}
+          label="Average Improvement"
+          value={
+            stats.averageImprovement !== null
               ? `${stats.averageImprovement >= 0 ? "+" : ""}${stats.averageImprovement.toFixed(1)}%`
-              : "-"}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold text-foreground/50">Need Attention</p>
-          <p className="mt-2 text-3xl font-bold text-foreground">{stats.needAttention.length} Athlete</p>
-        </div>
+              : "-"
+          }
+          tone="gold"
+        />
+        <StatCard
+          icon={AlertCircle}
+          label="Need Attention"
+          value={`${stats.needAttention.length} Athlete`}
+          tone="bronze"
+        />
       </div>
 
-      {stats.needAttention.length > 0 && (
-        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-foreground/60">Perlu Perhatian</h2>
+      <Card>
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-bronze/15 text-bronze">
+            <AlertCircle size={16} />
+          </div>
+          <CardLabel>Perlu Perhatian</CardLabel>
+        </div>
+        {stats.needAttention.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">
             {stats.needAttention.map((athlete) => (
-              <li key={athlete.id} className="flex items-center justify-between text-sm">
+              <li
+                key={athlete.id}
+                className="flex items-center justify-between rounded-xl bg-background px-3 py-2.5 text-sm"
+              >
                 <span className="font-medium text-foreground">{athlete.name}</span>
-                <span className="text-foreground/60">{athlete.reason}</span>
+                <span className="text-foreground/55">{athlete.reason}</span>
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        ) : (
+          <div className="mt-3">
+            <EmptyState icon={Users} title="Semua atlet dalam kondisi baik" />
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

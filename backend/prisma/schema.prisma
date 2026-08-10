@@ -18,6 +18,21 @@ enum AthleteCategory {
   SENIOR
 }
 
+enum Sport {
+  SWIMMING
+  FINSWIMMING
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum EventCategoryType {
+  INDIVIDU
+  ESTAFET
+}
+
 model User {
   id            String         @id @default(cuid())
   name          String
@@ -39,6 +54,7 @@ model AthleteProfile {
   kta            String?         @unique
   birthDate      DateTime?
   category       AthleteCategory?
+  sport          Sport           @default(FINSWIMMING)
   club           String?
   photoUrl       String?
 
@@ -51,28 +67,59 @@ model AthleteProfile {
 }
 
 model Event {
-  id          String       @id @default(cuid())
+  id          String          @id @default(cuid())
   name        String
   date        DateTime
   location    String
-  categories  String[]
+  sport       Sport           @default(FINSWIMMING)
 
+  categories  EventCategory[]
   entries     EventEntry[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model EventCategory {
+  id       String            @id @default(cuid())
+  eventId  String
+  event    Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name     String
+  type     EventCategoryType @default(INDIVIDU)
+  fee      Int               @default(0)
+
+  selections EventEntryCategory[]
+
+  @@unique([eventId, name, type])
 }
 
 model EventEntry {
-  id         String         @id @default(cuid())
-  eventId    String
-  event      Event          @relation(fields: [eventId], references: [id])
-  athleteId  String
-  athlete    AthleteProfile @relation(fields: [athleteId], references: [id])
+  id            String         @id @default(cuid())
+  eventId       String
+  event         Event          @relation(fields: [eventId], references: [id])
+  athleteId     String
+  athlete       AthleteProfile @relation(fields: [athleteId], references: [id])
 
-  result     String?
+  result        String?
+  paymentStatus PaymentStatus  @default(UNPAID)
+  registeredAt  DateTime       @default(now())
+
+  categories    EventEntryCategory[]
 
   @@unique([eventId, athleteId])
+}
+
+model EventEntryCategory {
+  id         String        @id @default(cuid())
+  entryId    String
+  entry      EventEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   EventCategory @relation(fields: [categoryId], references: [id])
+
+  fee        Int
+
+  @@unique([entryId, categoryId])
 }
 
 model TimeTrial {

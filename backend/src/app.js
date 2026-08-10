@@ -17,4 +17,9 @@ app.use("/api/time-trials", require("./routes/timeTrial.routes"));
 app.use("/api/training", require("./routes/training.routes"));
 app.use("/api/coach", require("./routes/coach.routes"));
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: "Terjadi kesalahan pada server" });
+});
+
 module.exports = app;

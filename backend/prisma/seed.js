@@ -18,6 +18,7 @@ async function main() {
           kta: "BALI-FS-2026-0231",
           birthDate: new Date("2008-05-12"),
           category: "JUNIOR",
+          sport: "FINSWIMMING",
           club: "Bali Finswimming Club",
         },
       },
@@ -48,6 +49,10 @@ async function main() {
   });
 
   const athleteProfileId = athleteUser.athleteProfile.id;
+  await prisma.athleteProfile.update({
+    where: { id: athleteProfileId },
+    data: { sport: "FINSWIMMING" },
+  });
 
   const events = [
     {
@@ -55,47 +60,82 @@ async function main() {
       name: "Bali Championship 2026",
       date: new Date("2026-09-12"),
       location: "Denpasar Pool",
-      categories: ["50M", "100M", "200M"],
+      sport: "FINSWIMMING",
+      categories: [
+        { name: "50M", type: "INDIVIDU", fee: 75000 },
+        { name: "100M", type: "INDIVIDU", fee: 100000 },
+        { name: "200M", type: "INDIVIDU", fee: 125000 },
+        { name: "4x50M Relay", type: "ESTAFET", fee: 150000 },
+      ],
       result: null,
+      paymentStatus: "UNPAID",
+      registerCategories: ["50M", "100M"],
     },
     {
       id: "seed-event-nationals-2025",
       name: "Kejurnas Finswimming 2025",
       date: new Date("2025-11-20"),
       location: "Jakarta Aquatic Center",
-      categories: ["50M", "100M"],
+      sport: "FINSWIMMING",
+      categories: [
+        { name: "50M", fee: 100000 },
+        { name: "100M", fee: 125000 },
+      ],
       result: "GOLD",
+      paymentStatus: "PAID",
+      registerCategories: ["50M"],
     },
     {
       id: "seed-event-regional-2025",
       name: "Kejurda Bali 2025",
       date: new Date("2025-06-15"),
       location: "Denpasar Pool",
-      categories: ["50M"],
+      sport: "SWIMMING",
+      categories: [{ name: "50M", fee: 50000 }],
       result: "SILVER",
+      paymentStatus: "PAID",
+      registerCategories: ["50M"],
     },
     {
       id: "seed-event-club-cup-2025",
       name: "Club Cup 2025",
       date: new Date("2025-03-02"),
       location: "Sanur Pool",
-      categories: ["50M", "100M"],
+      sport: "SWIMMING",
+      categories: [
+        { name: "50M", fee: 50000 },
+        { name: "100M", fee: 75000 },
+      ],
       result: "BRONZE",
+      paymentStatus: "PAID",
+      registerCategories: ["50M", "100M"],
     },
   ];
 
-  for (const { result, ...eventData } of events) {
+  const eventCategoriesById = {};
+
+  for (const { result, paymentStatus, registerCategories, categories, ...eventData } of events) {
     const event = await prisma.event.upsert({
       where: { id: eventData.id },
       update: {},
-      create: eventData,
+      create: { ...eventData, categories: { create: categories } },
+      include: { categories: true },
+    });
+    eventCategoriesById[event.id] = event.categories;
+
+    const entry = await prisma.eventEntry.upsert({
+      where: { eventId_athleteId: { eventId: event.id, athleteId: athleteProfileId } },
+      update: { result, paymentStatus },
+      create: { eventId: event.id, athleteId: athleteProfileId, result, paymentStatus },
     });
 
-    await prisma.eventEntry.upsert({
-      where: { eventId_athleteId: { eventId: event.id, athleteId: athleteProfileId } },
-      update: { result },
-      create: { eventId: event.id, athleteId: athleteProfileId, result },
-    });
+    await prisma.eventEntryCategory.deleteMany({ where: { entryId: entry.id } });
+    const selected = event.categories.filter((c) => registerCategories.includes(c.name));
+    if (selected.length > 0) {
+      await prisma.eventEntryCategory.createMany({
+        data: selected.map((c) => ({ entryId: entry.id, categoryId: c.id, fee: c.fee })),
+      });
+    }
   }
 
   const athleteId = athleteUser.athleteProfile.id;
@@ -121,15 +161,33 @@ async function main() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  await prisma.trainingSession.deleteMany({ where: { title: "Sprint Training" } });
-  await prisma.trainingSession.create({
-    data: {
-      title: "Sprint Training",
-      date: today,
-      startTime: "17:00",
-      endTime: "19:00",
-      description: "Latihan sprint rutin",
-    },
+  await prisma.trainingSession.deleteMany({
+    where: { title: { in: ["Sprint Training", "Technique Training", "Strength Training"] } },
+  });
+  await prisma.trainingSession.createMany({
+    data: [
+      {
+        title: "Sprint Training",
+        date: today,
+        startTime: "17:00",
+        endTime: "19:00",
+        description: "Latihan sprint rutin",
+      },
+      {
+        title: "Technique Training",
+        date: new Date(today.getFullYear(), today.getMonth(), 12),
+        startTime: "16:00",
+        endTime: "18:00",
+        description: "Fokus teknik dasar",
+      },
+      {
+        title: "Strength Training",
+        date: new Date(today.getFullYear(), today.getMonth(), 15),
+        startTime: "07:00",
+        endTime: "09:00",
+        description: "Latihan kekuatan gym",
+      },
+    ],
   });
 
   // Atlet tambahan untuk data Coach Dashboard yang bervariasi
@@ -142,12 +200,21 @@ async function main() {
       password: passwordHash,
       role: "ATHLETE",
       athleteProfile: {
-        create: { athleteNumber: "FS-0245", category: "SENIOR", club: "Bali Finswimming Club" },
+        create: {
+          athleteNumber: "FS-0245",
+          category: "SENIOR",
+          sport: "SWIMMING",
+          club: "Bali Finswimming Club",
+        },
       },
     },
     include: { athleteProfile: true },
   });
   const aryaId = aryaUser.athleteProfile.id;
+  await prisma.athleteProfile.update({
+    where: { id: aryaId },
+    data: { sport: "SWIMMING" },
+  });
   await prisma.timeTrial.deleteMany({ where: { athleteId: aryaId } });
   await prisma.timeTrial.createMany({
     data: [
@@ -165,12 +232,21 @@ async function main() {
       password: passwordHash,
       role: "ATHLETE",
       athleteProfile: {
-        create: { athleteNumber: "FS-0258", category: "JUNIOR", club: "Bali Finswimming Club" },
+        create: {
+          athleteNumber: "FS-0258",
+          category: "JUNIOR",
+          sport: "FINSWIMMING",
+          club: "Bali Finswimming Club",
+        },
       },
     },
     include: { athleteProfile: true },
   });
   const putuId = putuUser.athleteProfile.id;
+  await prisma.athleteProfile.update({
+    where: { id: putuId },
+    data: { sport: "FINSWIMMING" },
+  });
   await prisma.timeTrial.deleteMany({ where: { athleteId: putuId } });
   await prisma.timeTrial.createMany({
     data: [
@@ -178,6 +254,37 @@ async function main() {
       { athleteId: putuId, category: "50M Surface", date: new Date("2026-04-20"), time: "00:26.50" },
     ],
   });
+
+  const baliCategories = eventCategoriesById["seed-event-bali-championship"] || [];
+  const fiftyM = baliCategories.find((c) => c.name === "50M");
+
+  const aryaEntry = await prisma.eventEntry.upsert({
+    where: {
+      eventId_athleteId: { eventId: "seed-event-bali-championship", athleteId: aryaId },
+    },
+    update: {},
+    create: { eventId: "seed-event-bali-championship", athleteId: aryaId, paymentStatus: "UNPAID" },
+  });
+  const putuEntry = await prisma.eventEntry.upsert({
+    where: {
+      eventId_athleteId: { eventId: "seed-event-bali-championship", athleteId: putuId },
+    },
+    update: {},
+    create: { eventId: "seed-event-bali-championship", athleteId: putuId, paymentStatus: "PAID" },
+  });
+
+  if (fiftyM) {
+    await prisma.eventEntryCategory.upsert({
+      where: { entryId_categoryId: { entryId: aryaEntry.id, categoryId: fiftyM.id } },
+      update: {},
+      create: { entryId: aryaEntry.id, categoryId: fiftyM.id, fee: fiftyM.fee },
+    });
+    await prisma.eventEntryCategory.upsert({
+      where: { entryId_categoryId: { entryId: putuEntry.id, categoryId: fiftyM.id } },
+      update: {},
+      create: { entryId: putuEntry.id, categoryId: fiftyM.id, fee: fiftyM.fee },
+    });
+  }
 
   console.log("Seed selesai.");
 }
