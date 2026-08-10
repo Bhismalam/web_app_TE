@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ATHLETE
+  COACH
+  ADMIN
+}
+
+enum AthleteCategory {
+  JUNIOR
+  SENIOR
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  athleteProfile AthleteProfile?
+}
+
+model AthleteProfile {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id])
+
+  athleteNumber  String?         @unique
+  kta            String?         @unique
+  birthDate      DateTime?
+  category       AthleteCategory?
+  club           String?
+  photoUrl       String?
+
+  timeTrials     TimeTrial[]
+  eventEntries   EventEntry[]
+  achievements   AthleteAchievement[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Event {
+  id          String       @id @default(cuid())
+  name        String
+  date        DateTime
+  location    String
+  categories  String[]
+
+  entries     EventEntry[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model EventEntry {
+  id         String         @id @default(cuid())
+  eventId    String
+  event      Event          @relation(fields: [eventId], references: [id])
+  athleteId  String
+  athlete    AthleteProfile @relation(fields: [athleteId], references: [id])
+
+  result     String?
+
+  @@unique([eventId, athleteId])
+}
+
+model TimeTrial {
+  id               String         @id @default(cuid())
+  athleteId        String
+  athlete          AthleteProfile @relation(fields: [athleteId], references: [id])
+
+  category         String
+  date             DateTime
+  time             String
+  condition        String?
+  coachNote        String?
+
+  startRating      Int?
+  speedRating      Int?
+  techniqueRating  Int?
+  recommendation   String?
+
+  createdAt        DateTime       @default(now())
+}
+
+model Achievement {
+  id           String               @id @default(cuid())
+  code         String               @unique
+  title        String
+  description  String?
+  icon         String?
+
+  athletes     AthleteAchievement[]
+}
+
+model AthleteAchievement {
+  id             String         @id @default(cuid())
+  athleteId      String
+  athlete        AthleteProfile @relation(fields: [athleteId], references: [id])
+  achievementId  String
+  achievement    Achievement    @relation(fields: [achievementId], references: [id])
+  unlockedAt     DateTime       @default(now())
+
+  @@unique([athleteId, achievementId])
+}
+
+model TrainingSession {
+  id          String    @id @default(cuid())
+  title       String
+  date        DateTime
+  startTime   String?
+  endTime     String?
+  description String?
+
+  createdAt   DateTime  @default(now())
+}
