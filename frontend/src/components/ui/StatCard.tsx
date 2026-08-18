@@ -10,7 +10,8 @@ export default function StatCard({
   label: string;
   value: string | number;
   tone?: "primary" | "gold" | "silver" | "bronze" | "green";
-}) {
+}
+)  {
   const toneClasses: Record<string, string> = {
     primary: "bg-primary/10 text-primary",
     gold: "bg-gold/15 text-gold",
